@@ -872,7 +872,7 @@
           </a>
 
           <a class="platform" role="listitem"
-            href="https://r.grab.com/g/6-20250919_124340_0a23fc8ddb424d648ce079596d6c78f9_MEXMPS-3-C7JZGU2HSANYSE"
+            href="https://r.grab.com/g/6-20250919_124340_0a23fc8ddb424d648ce079596d6c78f9_MEXMPS-3-C7JZGU2HSANYSE?openExternalBrowser=1"
             target="_blank" rel="noopener" onclick="platformJump(event, this.href)">
             <div class="ico" aria-hidden="true"><img src="img/grab-seeklogo.png" alt="Grab"></div>
             <div>
@@ -892,7 +892,7 @@
           </a>
 
           <a class="platform" role="listitem"
-            href="https://shopee.co.th/universal-link/now-food/shop/10331196?deep_and_deferred=1&shareChannel=copy_link"
+            href="https://shopee.co.th/universal-link/now-food/shop/10331196?deep_and_deferred=1&shareChannel=copy_link&openExternalBrowser=1"
             target="_blank" rel="noopener" onclick="platformJump(event, this.href)">
             <div class="ico" aria-hidden="true"><img src="img/shopee-food-logo-png_seeklogo-405304.png"
                 alt="ShopeeFood"></div>
@@ -914,7 +914,7 @@
         </div>
 
         <div class="cta-row">
-          <a class="cta primary" href="https://lin.ee/zWU63FF" target="_blank" rel="noopener"
+          <a class="cta primary" href="https://lin.ee/zWU63FF?openExternalBrowser=1" target="_blank" rel="noopener"
             onclick="platformJump(event, this.href)">
             <span class="pill" style="background:#00C300"></span>
             <span class="th">แอด LINE เลย</span>
@@ -1057,28 +1057,23 @@
       // 较晚的一次刷新可以使用常规逻辑，确保万无一失
       setTimeout(() => refreshUI(false), 1000);
       // 平台跳转优化：解决 LINE 等内置浏览器跳转 App 后回退卡在跳转中或死循环的问题
+      // 平台跳转优化：彻底解决 LINE 等内置浏览器跳转 App 后点击“返回”导致的死循环或卡顿问题
       window.platformJump = function (e, url) {
         if (e && e.preventDefault) e.preventDefault();
         if (!url) return;
 
-        // 核心方案：先尝试在新窗口打开（如果环境支持）
-        // 如果是在 LINE 等内置浏览器内，window.open 可能会失效，我们需要在当前页跳转
-        // 但跳转前，我们要确保用户点“回退”时，回到的是当前的展示态，而不是跳转瞬间。
-
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const isLine = /Line/i.test(navigator.userAgent);
 
-        if (isLine || isMobile) {
-          // 在移动端或 LINE 内部，延时一小会儿执行跳转
-          // 这样能确保浏览器已经记录了 index.html 的完整状态
-          setTimeout(() => {
-            // 使用 location.href 直接强制外链打开
-            // 某些 App 协议在 location.replace 下表现不稳，这里用 href
-            window.location.href = url;
-          }, 100);
+        if (isLine) {
+          // 核心方案：利用 LINE 的 openExternalBrowser=1 特性
+          // 配合 location.replace 确保跳转动作不留在 LINE 的历史堆栈中
+          window.location.replace(url);
         } else {
-          // PC 端或常规浏览器
-          window.open(url, '_blank');
+          // PC 端或常规浏览器，尝试新窗口打开
+          const newWin = window.open(url, '_blank');
+          if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+            window.location.href = url;
+          }
         }
       };
     })();
